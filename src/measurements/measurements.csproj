@@ -5,11 +5,22 @@
     <TargetFramework>net8.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
+    <RootNamespace>Measurements</RootNamespace>
   </PropertyGroup>
 
   <ItemGroup>
     <None Remove="Data\weather_stations.csv" />
-    <EmbeddedResource Include="Data\weather_stations.csv" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Remove="Data\cities.zip" />
+    <EmbeddedResource Include="Data\cities.zip" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Spectre.Console" Version="0.48.0" />
+    <PackageReference Include="System.CommandLine" Version="2.0.0-beta4.22272.1" />
+    <PackageReference Include="System.CommandLine.Hosting" Version="0.4.0-alpha.22272.1" />
   </ItemGroup>
 
 </Project>
