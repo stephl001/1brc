@@ -3,11 +3,18 @@ using System.CommandLine.Builder;
 using System.CommandLine.Hosting;
 using System.CommandLine.Invocation;
 using System.CommandLine.Parsing;
+using Measurements;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 
 var runner = new CommandLineBuilder(new GenerateMeasurements())
     .UseHost(_ => new HostBuilder(), builder => builder
-        .ConfigureServices((_, services) => { })
+        .ConfigureServices((_, services) =>
+        {
+            services.AddTransient<IStationLoader, StationLoader>();
+            services.AddTransient<ISampleCitiesProvider, ResourceCitiesProvider>();
+            services.AddTransient<IRandomTemperatureGenerator, RandomTemperatureGenerator>();
+        })
         .UseCommandHandler<GenerateMeasurements, GenerateMeasurements.Handler>())
     .UseDefaults()
     .Build();
@@ -19,29 +26,31 @@ public sealed class GenerateMeasurements : RootCommand
     public GenerateMeasurements()
         : base("Generate measurements file")
     {
-        // AddArgument(new Argument<string>("url", "url"));
-        // AddOption(new Option<string>(
-        //     ["--output", "-o"], "Output file path"));
+        AddArgument(new Argument<int>("count", "Number of weather entries to generate"));
+        AddOption(new Option<int>(
+             ["--cities", "-c"], "Number of cities to pick from city list (~40000)"));
     }
 
-    public new class Handler : ICommandHandler
+    public new class Handler(IStationLoader stationLoader) : ICommandHandler
     {
-        public string? Url { get; set; }
-        public string? Output { get; set; }
-
-        public Handler()
-        {
-            //...
-        }
+        public int Count { get; set; }
+        public int? Cities { get; set; }
 
         public int Invoke(InvocationContext context)
         {
             throw new NotImplementedException();
         }
 
-        public Task<int> InvokeAsync(InvocationContext context)
+        public async Task<int> InvokeAsync(InvocationContext context)
         {
-            return Task.FromResult(0);
+            await using Stream outputStream = File.OpenWrite(@"c:\temp\measurements.txt");
+            await using StreamWriter writer = new StreamWriter(outputStream);
+            await foreach (WeatherStation ws in stationLoader.GetRandomStationsAsync(Cities ?? -1, Count))
+            {
+                await writer.WriteLineAsync($"{ws.City};{ws.Temperature:f2}");
+            }
+
+            return 0;
         }
     }
 }
